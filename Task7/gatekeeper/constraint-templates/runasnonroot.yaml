@@ -1,0 +1,50 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spsprunasnonroot
+  annotations:
+    description: >-
+      Требует, чтобы контейнеры запускались от непривилегированного пользователя.
+      Контейнеры должны иметь runAsNonRoot: true и readOnlyRootFilesystem: true.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPRunAsNonRoot
+      validation:
+        openAPIV3Schema:
+          type: object
+          description: Требует runAsNonRoot и readOnlyRootFilesystem
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spsprunasnonroot
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          not c.securityContext.runAsNonRoot
+          msg := sprintf("Контейнер %v должен иметь runAsNonRoot: true", [c.name])
+        }
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          not c.securityContext.readOnlyRootFilesystem
+          msg := sprintf("Контейнер %v должен иметь readOnlyRootFilesystem: true", [c.name])
+        }
+
+        violation[{"msg": msg}] {
+          not input.review.object.spec.securityContext.runAsNonRoot
+          msg := "Pod должен иметь runAsNonRoot: true на уровне spec"
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.ephemeralContainers[_]
+        }
