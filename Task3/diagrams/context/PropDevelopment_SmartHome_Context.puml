@@ -1,0 +1,57 @@
+@startuml
+title PropDevelopment - Диаграмма контекста C4 - Сервисы "Умный дом"
+
+top to bottom direction
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+' ===== Пользователи (Actors) =====
+Person(owner, "Собственник", "Владелец квартиры/помещения, использующий мобильное приложение для управления доступом и умным домом")
+Person(resident, "Жилец", "Житель дома, использующий сервисы умного дома: домофон, шлагбаум")
+Person(guest, "Гость", "Посетитель, получающий временный доступ в дом через домофон")
+
+' ===== Система PropDevelopment =====
+System_Boundary(PropDevSystem, "PropDevelopment") {
+  Person(property_manager, "Управляющий недвижимостью", "Сотрудник, администрирующий доступ жильцов и настраивающий устройства умного дома")
+  Person(support_operator, "Оператор поддержки", "Сотрудник службы поддержки, помогающий пользователям с настройкой и использованием сервисов")
+
+  System(mobile_app, "Мобильное приложение", "Приложение для собственников и жильцов: управление доступом, настройка умного дома, просмотр истории событий. React Native, TypeScript")
+  System(backend, "Backend система", "Основная система управления недвижимостью: управление пользователями, объектами недвижимости, интеграция с партнёрами. Node.js, PostgreSQL")
+  System(admin_panel, "Административная панель", "Веб-интерфейс для управления настройками умного дома, правами доступа. React.js, TypeScript")
+  System(notification_service, "Сервис уведомлений", "Отправка push-уведомлений и SMS о событиях доступа. Node.js, Redis")
+}
+
+' ===== Внешние системы партнёра =====
+System_Ext(smart_home_platform, "Платформа партнёра 'Умный дом'", "Облачная платформа партнёра для управления устройствами умного дома и обработки биометрии")
+System_Ext(intercom_system, "Система интеллектуального домофона", "Видеодомофон с биометрическим распознаванием лиц для автоматического открытия двери")
+System_Ext(barrier_system, "Система интеллектуального шлагбаума", "Шлагбаум с распознаванием автомобильных номеров для автоматического открытия")
+System_Ext(telecom, "Телеком-оператор", "Внешний оператор для отправки SMS-уведомлений")
+
+' ===== Связи пользователей с системами =====
+Rel(owner, mobile_app, "Управляет доступом, настраивает разрешения для умного дома", "HTTPS/Mobile")
+Rel(resident, mobile_app, "Открывает домофон и шлагбаум, просматривает историю", "HTTPS/Mobile")
+Rel(guest, intercom_system, "Вызывает жильца через домофон", "Физическое взаимодействие")
+Rel(resident, intercom_system, "Распознаётся по лицу для доступа", "Биометрия")
+Rel(owner, barrier_system, "Автоматический въезд по номеру авто", "Распознавание номера")
+
+' ===== Связи сотрудников с системами =====
+Rel(property_manager, admin_panel, "Управляет настройками умного дома, администрирует доступ")
+Rel(support_operator, admin_panel, "Помогает пользователям с настройкой и решением проблем")
+
+' ===== Связи между системами PropDevelopment =====
+Rel(mobile_app, backend, "Получает данные о разрешениях доступа, отправляет команды", "REST API/HTTPS")
+Rel(admin_panel, backend, "Управляет настройками и правами доступа", "REST API/HTTPS")
+Rel(backend, notification_service, "Запрашивает отправку уведомлений о событиях", "Internal API")
+Rel(notification_service, owner, "Отправляет push-уведомления о событиях доступа", "Push")
+Rel(notification_service, telecom, "Отправляет SMS-уведомления", "API")
+
+' ===== Связи с внешними системами партнёра =====
+Rel(backend, smart_home_platform, "Синхронизирует пользователей, получает события, управляет разрешениями", "REST API/HTTPS")
+Rel(smart_home_platform, intercom_system, "Передаёт команды открытия, настройки биометрии", "IoT Protocol")
+Rel(smart_home_platform, barrier_system, "Передаёт команды открытия, список разрешённых номеров", "IoT Protocol")
+Rel(intercom_system, smart_home_platform, "Отправляет события распознавания и открытия", "IoT Protocol")
+Rel(barrier_system, smart_home_platform, "Отправляет события распознавания номеров и открытия", "IoT Protocol")
+
+@enduml

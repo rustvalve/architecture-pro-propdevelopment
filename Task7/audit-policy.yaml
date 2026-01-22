@@ -1,0 +1,56 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  # Логирование всех операций с подами в audit-zone
+  - level: RequestResponse
+    namespaces:
+      - audit-zone
+    verbs:
+      - create
+      - update
+      - patch
+      - delete
+    resources:
+      - group: ""
+        resources:
+          - pods
+
+  # Логирование операций с PodSecurity
+  - level: RequestResponse
+    verbs:
+      - create
+      - update
+      - patch
+    resources:
+      - group: ""
+        resources:
+          - namespaces
+
+  # Логирование операций Gatekeeper
+  - level: RequestResponse
+    verbs:
+      - create
+      - update
+      - patch
+      - delete
+    resources:
+      - group: "templates.gatekeeper.sh"
+        resources:
+          - constrainttemplates
+      - group: "constraints.gatekeeper.sh"
+        resources:
+          - "*"
+
+  # Логирование отклонённых запросов (403, 400)
+  - level: Metadata
+    omitStages:
+      - RequestReceived
+    resources:
+      - group: ""
+        resources:
+          - pods
+
+  # Остальные события на уровне Metadata
+  - level: Metadata
+    omitStages:
+      - RequestReceived
